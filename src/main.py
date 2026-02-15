@@ -84,6 +84,7 @@ Examples:
     create_parser.add_argument("--account", required=True, help="CustomerAccount (e.g., AK001)")
     create_parser.add_argument("--name", required=True, help="OrganizationName (e.g., 'Abdo Khoury')")
     create_parser.add_argument("--group", required=True, help="CustomerGroupId (e.g., 80)")
+    create_parser.add_argument("--currency", default="USD", help="SalesCurrencyCode (default: USD)")
 
     args = parser.parse_args()
 
@@ -118,12 +119,13 @@ def _handle_retrieve(args: argparse.Namespace, client: D365ApiClient, start_time
 
 def _handle_create(args: argparse.Namespace, client: D365ApiClient, start_time: float) -> None:
     """Handle the create subcommand."""
-    print(f"📤 Creating customer: Account={args.account}, Name={args.name}, Group={args.group}")
+    print(f"📤 Creating customer: Account={args.account}, Name={args.name}, Group={args.group}, Currency={args.currency}")
     created = create_customer(
         client=client,
         customer_account=args.account,
         organization_name=args.name,
         customer_group_id=args.group,
+        currency_code=args.currency,
     )
 
     elapsed = time.time() - start_time

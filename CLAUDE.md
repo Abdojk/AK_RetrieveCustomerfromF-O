@@ -1,8 +1,8 @@
-# CLAUDE.md — D365 F&O Customer Retrieval Tool
+# CLAUDE.md — D365 F&O Customer Management Tool
 
 ## Project Context
 
-This project connects to a Microsoft Dynamics 365 Finance & Operations environment via the OData REST API, authenticates using OAuth 2.0 Client Credentials, and retrieves all customer records from the **CustomersV2** entity. Output is displayed in the console in a formatted table.
+This project connects to a Microsoft Dynamics 365 Finance & Operations environment via the OData REST API, authenticates using OAuth 2.0 Client Credentials, and supports retrieving and creating customer records via the **CustomersV2** entity. Output is displayed in the console in a formatted table.
 
 ---
 
@@ -19,10 +19,11 @@ This project connects to a Microsoft Dynamics 365 Finance & Operations environme
 
 ---
 
-## API Endpoint
+## API Endpoints
 
 ```
-GET https://d365fo-nov235e1ff351a4734eb8aos.axcloud.dynamics.com/data/CustomersV2
+GET  https://d365fo-nov235e1ff351a4734eb8aos.axcloud.dynamics.com/data/CustomersV2
+POST https://d365fo-nov235e1ff351a4734eb8aos.axcloud.dynamics.com/data/CustomersV2
 ```
 
 ---
@@ -33,4 +34,4 @@ GET https://d365fo-nov235e1ff351a4734eb8aos.axcloud.dynamics.com/data/CustomersV
 - Type hints on all function signatures.
 - Use Python `logging` module, not `print()` (except for final table output).
 - Read secrets from `.env` only. Never hardcode.
-- This tool is **read-only** — no POST/PATCH/DELETE.
+- Supports **GET** (retrieve) and **POST** (create) operations on the CustomersV2 entity.

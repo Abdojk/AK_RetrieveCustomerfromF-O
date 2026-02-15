@@ -48,6 +48,7 @@ def create_customer(
     customer_account: str,
     organization_name: str,
     customer_group_id: str,
+    currency_code: str = "USD",
 ) -> dict:
     """Create a new customer in D365 F&O.
 
@@ -64,6 +65,7 @@ def create_customer(
         "CustomerAccount": customer_account,
         "OrganizationName": organization_name,
         "CustomerGroupId": customer_group_id,
+        "SalesCurrencyCode": currency_code,
     }
 
     logger.info(f"Creating customer in {ENTITY_NAME}: {payload}")

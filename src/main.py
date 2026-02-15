@@ -12,6 +12,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.auth import D365Authenticator
 from src.api_client import D365ApiClient
+from src.customer_service import get_all_customers
+from src.dashboard import display_dashboard
+from src.display import display_customers
 from src.customer_service import get_all_customers, create_customer
 from src.display import display_customers, display_created_customer
 
@@ -53,6 +56,20 @@ def parse_args() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  python src/main.py                     # Retrieve and display customers
+  python src/main.py --cross-company     # Across all legal entities
+  python src/main.py --max 50            # First 50 customers only
+  python src/main.py --all-columns       # Show all fields
+  python src/main.py --dashboard         # Summary dashboard view
+  python src/main.py --dry-run           # Test auth only
+  python src/main.py -v                  # Verbose logging
+        """,
+    )
+    parser.add_argument("--cross-company", action="store_true", help="Retrieve across all legal entities")
+    parser.add_argument("--max", type=int, default=None, help="Maximum number of records to retrieve")
+    parser.add_argument("--all-columns", action="store_true", help="Display all columns (not just key fields)")
+    parser.add_argument("--dashboard", action="store_true", help="Show summary dashboard instead of full table")
+    parser.add_argument("--dry-run", action="store_true", help="Authenticate and fetch first page only")
   python src/main.py retrieve                     # Retrieve and display customers
   python src/main.py retrieve --cross-company     # Across all legal entities
   python src/main.py retrieve --max 50            # First 50 customers only
@@ -160,6 +177,21 @@ def main() -> None:
         access_token=token,
     )
 
+    customers = get_all_customers(
+        client=client,
+        cross_company=args.cross_company,
+        max_records=args.max,
+    )
+
+    elapsed = time.time() - start_time
+
+    # Step 3: Display
+    if args.dashboard:
+        display_dashboard(customers)
+    else:
+        display_customers(customers, show_all_columns=args.all_columns)
+
+    print(f"⏱️  Completed in {elapsed:.1f} seconds.\n")
     # Step 3: Dispatch to the appropriate command
     if args.command == "retrieve":
         _handle_retrieve(args, client, start_time)

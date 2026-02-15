@@ -42,3 +42,34 @@ def get_all_customers(
 
     logger.info(f"Total customers retrieved: {len(records)}")
     return records
+
+
+def create_customer(
+    client: D365ApiClient,
+    customer_account: str,
+    organization_name: str,
+    customer_group_id: str,
+) -> dict:
+    """Create a new customer in D365 F&O.
+
+    Args:
+        client: Authenticated D365 API client.
+        customer_account: The customer account ID (e.g., 'AK001').
+        organization_name: The organization/customer name.
+        customer_group_id: The customer group ID (e.g., '80').
+
+    Returns:
+        The created customer record as a dictionary.
+    """
+    payload = {
+        "CustomerAccount": customer_account,
+        "OrganizationName": organization_name,
+        "CustomerGroupId": customer_group_id,
+    }
+
+    logger.info(f"Creating customer in {ENTITY_NAME}: {payload}")
+
+    result = client.post_record(entity=ENTITY_NAME, payload=payload)
+
+    logger.info(f"Customer created successfully: {result.get('CustomerAccount', 'unknown')}")
+    return result

@@ -1,8 +1,9 @@
-"""Speech-to-text transcription via Azure Cognitive Services Speech API."""
+"""Speech-to-text transcription via OpenAI Whisper API."""
 
+import io
 import logging
 
-import requests
+from openai import OpenAI, APIError, APIConnectionError, RateLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -11,58 +12,39 @@ class TranscriptionError(Exception):
     """Raised when audio transcription fails."""
 
 
-def transcribe_audio(audio_data: bytes, speech_key: str, speech_region: str) -> str:
-    """Transcribe audio bytes using the Azure Speech-to-Text REST API.
+def transcribe_audio(
+    audio_data: bytes, api_key: str, filename: str = "voice.ogg"
+) -> str:
+    """Transcribe audio bytes using OpenAI Whisper API.
 
     Args:
         audio_data: Raw audio file bytes (ogg/opus from Twilio).
-        speech_key: Azure Speech Services subscription key.
-        speech_region: Azure region (e.g., 'eastus', 'westeurope').
+        api_key: OpenAI API key.
+        filename: Name hint for the audio file (format detection).
 
     Returns:
         Transcribed text string.
 
     Raises:
-        TranscriptionError: If the API call fails or returns empty text.
+        TranscriptionError: If the Whisper API call fails or returns empty text.
     """
-    url = (
-        f"https://{speech_region}.stt.speech.microsoft.com"
-        "/speech/recognition/conversation/cognitiveservices/v1"
-    )
-    headers = {
-        "Ocp-Apim-Subscription-Key": speech_key,
-        "Content-Type": "audio/ogg; codecs=opus",
-        "Accept": "application/json",
-    }
-    params = {"language": "en-US"}
+    client = OpenAI(api_key=api_key)
+    audio_file = io.BytesIO(audio_data)
+    audio_file.name = filename
 
     try:
-        logger.info("Sending audio to Azure Speech Services for transcription...")
-        resp = requests.post(
-            url, headers=headers, params=params, data=audio_data, timeout=30
+        logger.info("Sending audio to OpenAI Whisper for transcription...")
+        result = client.audio.transcriptions.create(
+            model="whisper-1",
+            file=audio_file,
         )
-    except requests.RequestException as exc:
-        logger.error("Azure Speech API request failed: %s", exc)
-        raise TranscriptionError(f"Speech transcription request failed: {exc}") from exc
+    except (APIError, APIConnectionError, RateLimitError) as exc:
+        logger.error("Whisper API error: %s", exc)
+        raise TranscriptionError(f"Whisper transcription failed: {exc}") from exc
 
-    if resp.status_code != 200:
-        logger.error("Azure Speech API returned %d: %s", resp.status_code, resp.text[:500])
-        raise TranscriptionError(
-            f"Speech API returned status {resp.status_code}"
-        )
-
-    data = resp.json()
-    status = data.get("RecognitionStatus", "")
-
-    if status != "Success":
-        logger.warning("Azure Speech recognition status: %s", status)
-        raise TranscriptionError(
-            f"Speech recognition failed with status: {status}"
-        )
-
-    text = data.get("DisplayText", "").strip()
+    text = result.text.strip()
     if not text:
-        logger.warning("Azure Speech returned empty transcription.")
+        logger.warning("Whisper returned empty transcription.")
         raise TranscriptionError("Transcription returned empty text.")
 
     logger.info("Transcription result: %s", text)

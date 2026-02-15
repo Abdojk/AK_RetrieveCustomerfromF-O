@@ -69,12 +69,12 @@ def display_created_customer(customer: dict) -> None:
     shown_keys: set[str] = set()
     for field in priority_fields:
         if field in customer:
-            rows.append([field, customer[field]])
+            rows.append([field, customer[field] if customer[field] is not None else ""])
             shown_keys.add(field)
 
     for key, value in customer.items():
         if key not in shown_keys and not key.startswith("@"):
-            rows.append([key, value])
+            rows.append([key, value if value is not None else ""])
 
     print(tabulate(rows, headers=["Field", "Value"], tablefmt="grid", maxcolwidths=[30, 50]))
     print()

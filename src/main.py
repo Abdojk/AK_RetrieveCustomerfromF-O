@@ -12,10 +12,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.auth import D365Authenticator
 from src.api_client import D365ApiClient
-from src.customer_service import get_all_customers
-from src.dashboard import display_dashboard
-from src.display import display_customers
 from src.customer_service import get_all_customers, create_customer
+from src.dashboard import display_dashboard
 from src.display import display_customers, display_created_customer
 
 
@@ -70,13 +68,6 @@ Examples:
     parser.add_argument("--all-columns", action="store_true", help="Display all columns (not just key fields)")
     parser.add_argument("--dashboard", action="store_true", help="Show summary dashboard instead of full table")
     parser.add_argument("--dry-run", action="store_true", help="Authenticate and fetch first page only")
-  python src/main.py retrieve                     # Retrieve and display customers
-  python src/main.py retrieve --cross-company     # Across all legal entities
-  python src/main.py retrieve --max 50            # First 50 customers only
-  python src/main.py create --account AK001 --name "Abdo Khoury" --group 80
-  python src/main.py -v retrieve                  # Verbose logging
-        """,
-    )
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose/debug logging")
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -177,21 +168,6 @@ def main() -> None:
         access_token=token,
     )
 
-    customers = get_all_customers(
-        client=client,
-        cross_company=args.cross_company,
-        max_records=args.max,
-    )
-
-    elapsed = time.time() - start_time
-
-    # Step 3: Display
-    if args.dashboard:
-        display_dashboard(customers)
-    else:
-        display_customers(customers, show_all_columns=args.all_columns)
-
-    print(f"⏱️  Completed in {elapsed:.1f} seconds.\n")
     # Step 3: Dispatch to the appropriate command
     if args.command == "retrieve":
         _handle_retrieve(args, client, start_time)

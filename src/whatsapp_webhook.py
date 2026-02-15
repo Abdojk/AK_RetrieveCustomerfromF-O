@@ -42,11 +42,15 @@ class WhatsAppConfig:
         self.request_validator = RequestValidator(self.twilio_auth_token)
 
 
-def create_app(config: WhatsAppConfig | None = None) -> Flask:
+def create_app(
+    config: WhatsAppConfig | None = None,
+    skip_validation: bool = False,
+) -> Flask:
     """Create and configure the Flask application.
 
     Args:
         config: Optional pre-built config. If None, reads from environment.
+        skip_validation: If True, skip Twilio signature validation (dev only).
 
     Returns:
         Configured Flask app instance.
@@ -56,6 +60,7 @@ def create_app(config: WhatsAppConfig | None = None) -> Flask:
     if config is None:
         config = WhatsAppConfig()
     app.config["WHATSAPP_CONFIG"] = config
+    app.config["SKIP_VALIDATION"] = skip_validation
 
     @app.route("/webhook", methods=["GET"])
     def webhook_verify() -> Response:
@@ -68,12 +73,16 @@ def create_app(config: WhatsAppConfig | None = None) -> Flask:
         cfg: WhatsAppConfig = app.config["WHATSAPP_CONFIG"]
 
         # Step 1: Validate Twilio request signature
-        if not _validate_twilio_request(cfg.request_validator, request):
+        if app.config["SKIP_VALIDATION"]:
+            logger.debug("Twilio signature validation skipped (dev mode).")
+        elif not _validate_twilio_request(cfg.request_validator, request):
             logger.warning("Invalid Twilio signature — rejecting request.")
             return Response("Forbidden", status=403)
 
         sender = request.form.get("From", "unknown")
+        body = request.form.get("Body", "")
         logger.info("Incoming WhatsApp message from %s", sender)
+        logger.info("Message body: %s", body if body else "(empty — likely voice/media)")
 
         # Step 2: Check for voice message (media attachment)
         num_media = int(request.form.get("NumMedia", "0"))
@@ -146,10 +155,31 @@ def create_app(config: WhatsAppConfig | None = None) -> Flask:
     return app
 
 
+def _build_original_url(req: request) -> str:
+    """Reconstruct the original public URL when behind a reverse proxy (e.g. ngrok).
+
+    Ngrok forwards X-Forwarded-Proto and X-Forwarded-Host headers.
+    Twilio signs requests using the public URL, so we must validate
+    against that URL — not the local Flask URL.
+    """
+    forwarded_proto = req.headers.get("X-Forwarded-Proto")
+    forwarded_host = req.headers.get("X-Forwarded-Host") or req.headers.get("Host")
+
+    if forwarded_proto and forwarded_host:
+        return f"{forwarded_proto}://{forwarded_host}{req.path}"
+    return req.url
+
+
 def _validate_twilio_request(validator: RequestValidator, req: request) -> bool:
-    """Validate that an incoming request genuinely came from Twilio."""
+    """Validate that an incoming request genuinely came from Twilio.
+
+    Uses forwarded headers to reconstruct the public URL when behind
+    a reverse proxy like ngrok, since Twilio signs using the public URL.
+    """
     signature = req.headers.get("X-Twilio-Signature", "")
-    return validator.validate(req.url, req.form.to_dict(), signature)
+    url = _build_original_url(req)
+    logger.debug("Validating Twilio signature against URL: %s", url)
+    return validator.validate(url, req.form.to_dict(), signature)
 
 
 def _download_audio(

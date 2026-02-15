@@ -105,6 +105,11 @@ Examples:
     whatsapp_parser.add_argument(
         "--debug", action="store_true", help="Run Flask in debug mode"
     )
+    whatsapp_parser.add_argument(
+        "--skip-validation",
+        action="store_true",
+        help="Skip Twilio signature validation (use behind ngrok in development)",
+    )
 
     args = parser.parse_args()
 
@@ -143,7 +148,7 @@ def _handle_whatsapp(args: argparse.Namespace) -> None:
     validate_whatsapp_env_vars()
 
     config = WhatsAppConfig()
-    app = create_app(config)
+    app = create_app(config, skip_validation=args.skip_validation)
 
     logger = logging.getLogger(__name__)
     logger.info("Starting WhatsApp webhook server on %s:%s", args.host, args.port)
@@ -154,7 +159,10 @@ def _handle_whatsapp(args: argparse.Namespace) -> None:
 
     print(f"\nWhatsApp Webhook Server")
     print(f"   Listening: http://{args.host}:{args.port}/webhook")
-    print(f"   Configure this URL in your Twilio WhatsApp sandbox.\n")
+    print(f"   Configure this URL in your Twilio WhatsApp sandbox.")
+    if args.skip_validation:
+        print(f"   Twilio signature validation: DISABLED (dev mode)")
+    print()
 
     app.run(host=args.host, port=args.port, debug=args.debug)
 

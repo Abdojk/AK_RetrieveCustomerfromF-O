@@ -12,10 +12,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.auth import D365Authenticator
 from src.api_client import D365ApiClient
-from src.customer_service import get_all_customers
-from src.dashboard import display_dashboard
-from src.display import display_customers
 from src.customer_service import get_all_customers, create_customer
+from src.dashboard import display_dashboard
 from src.display import display_customers, display_created_customer
 
 
@@ -56,39 +54,36 @@ def parse_args() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python src/main.py                     # Retrieve and display customers
-  python src/main.py --cross-company     # Across all legal entities
-  python src/main.py --max 50            # First 50 customers only
-  python src/main.py --all-columns       # Show all fields
-  python src/main.py --dashboard         # Summary dashboard view
-  python src/main.py --dry-run           # Test auth only
-  python src/main.py -v                  # Verbose logging
+  python src/main.py                                                    # Retrieve and display customers
+  python src/main.py retrieve --cross-company                           # Across all legal entities
+  python src/main.py retrieve --max 50                                  # First 50 customers only
+  python src/main.py retrieve --all-columns                             # Show all fields
+  python src/main.py retrieve --dashboard                               # Summary dashboard view
+  python src/main.py retrieve --dry-run                                 # Test auth only
+  python src/main.py create --account AK001 --name "Abdo Khoury" --group 80
+  python src/main.py -v retrieve                                        # Verbose logging
         """,
     )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose/debug logging")
+
+    # Top-level flags for backward compatibility (no subcommand)
     parser.add_argument("--cross-company", action="store_true", help="Retrieve across all legal entities")
     parser.add_argument("--max", type=int, default=None, help="Maximum number of records to retrieve")
     parser.add_argument("--all-columns", action="store_true", help="Display all columns (not just key fields)")
     parser.add_argument("--dashboard", action="store_true", help="Show summary dashboard instead of full table")
     parser.add_argument("--dry-run", action="store_true", help="Authenticate and fetch first page only")
-  python src/main.py retrieve                     # Retrieve and display customers
-  python src/main.py retrieve --cross-company     # Across all legal entities
-  python src/main.py retrieve --max 50            # First 50 customers only
-  python src/main.py create --account AK001 --name "Abdo Khoury" --group 80
-  python src/main.py -v retrieve                  # Verbose logging
-        """,
-    )
-    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose/debug logging")
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    # --- retrieve subcommand (existing behavior) ---
+    # --- retrieve subcommand ---
     retrieve_parser = subparsers.add_parser("retrieve", help="Retrieve customers from D365 F&O")
     retrieve_parser.add_argument("--cross-company", action="store_true", help="Retrieve across all legal entities")
     retrieve_parser.add_argument("--max", type=int, default=None, help="Maximum number of records to retrieve")
     retrieve_parser.add_argument("--all-columns", action="store_true", help="Display all columns (not just key fields)")
+    retrieve_parser.add_argument("--dashboard", action="store_true", help="Show summary dashboard instead of full table")
     retrieve_parser.add_argument("--dry-run", action="store_true", help="Authenticate only, don't retrieve data")
 
-    # --- create subcommand (new) ---
+    # --- create subcommand ---
     create_parser = subparsers.add_parser("create", help="Create a new customer in D365 F&O")
     create_parser.add_argument("--account", required=True, help="CustomerAccount (e.g., AK001)")
     create_parser.add_argument("--name", required=True, help="OrganizationName (e.g., 'Abdo Khoury')")
@@ -99,10 +94,6 @@ Examples:
     # Default to 'retrieve' if no subcommand given (backward compatibility)
     if args.command is None:
         args.command = "retrieve"
-        args.cross_company = False
-        args.max = None
-        args.all_columns = False
-        args.dry_run = False
 
     return args
 
@@ -121,7 +112,12 @@ def _handle_retrieve(args: argparse.Namespace, client: D365ApiClient, start_time
     )
 
     elapsed = time.time() - start_time
-    display_customers(customers, show_all_columns=args.all_columns)
+
+    if args.dashboard:
+        display_dashboard(customers)
+    else:
+        display_customers(customers, show_all_columns=args.all_columns)
+
     print(f"⏱️  Completed in {elapsed:.1f} seconds.\n")
 
 
@@ -177,21 +173,6 @@ def main() -> None:
         access_token=token,
     )
 
-    customers = get_all_customers(
-        client=client,
-        cross_company=args.cross_company,
-        max_records=args.max,
-    )
-
-    elapsed = time.time() - start_time
-
-    # Step 3: Display
-    if args.dashboard:
-        display_dashboard(customers)
-    else:
-        display_customers(customers, show_all_columns=args.all_columns)
-
-    print(f"⏱️  Completed in {elapsed:.1f} seconds.\n")
     # Step 3: Dispatch to the appropriate command
     if args.command == "retrieve":
         _handle_retrieve(args, client, start_time)

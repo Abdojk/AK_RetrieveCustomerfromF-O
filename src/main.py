@@ -3,6 +3,7 @@
 import argparse
 import logging
 import os
+import subprocess
 import sys
 import time
 from dotenv import load_dotenv
@@ -59,12 +60,14 @@ Examples:
   python src/main.py --all-columns       # Show all fields
   python src/main.py --dry-run           # Test auth only
   python src/main.py -v                  # Verbose logging
+  python src/main.py --dashboard          # Launch web dashboard
         """,
     )
     parser.add_argument("--cross-company", action="store_true", help="Retrieve across all legal entities")
     parser.add_argument("--max", type=int, default=None, help="Maximum number of records to retrieve")
     parser.add_argument("--all-columns", action="store_true", help="Display all columns (not just key fields)")
     parser.add_argument("--dry-run", action="store_true", help="Authenticate and fetch first page only")
+    parser.add_argument("--dashboard", action="store_true", help="Launch interactive Streamlit web dashboard")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose/debug logging")
     return parser.parse_args()
 
@@ -74,6 +77,19 @@ def main() -> None:
     args = parse_args()
     setup_logging(verbose=args.verbose)
     logger = logging.getLogger(__name__)
+
+    # Dashboard mode — launch Streamlit and exit
+    if args.dashboard:
+        dashboard_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "dashboard.py"
+        )
+        logger.info(f"Launching Streamlit dashboard: {dashboard_path}")
+        print("\n🚀 Launching dashboard at http://localhost:8501 ...\n")
+        subprocess.run([
+            sys.executable, "-m", "streamlit", "run", dashboard_path,
+            "--server.headless", "true",
+        ])
+        return
 
     # Load .env from project root
     env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")

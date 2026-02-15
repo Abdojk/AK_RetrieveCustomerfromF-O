@@ -18,6 +18,9 @@ CUSTOMER_FIELDS = [
     "PrimaryContactPhone",
     "AddressDescription",
     "dataAreaId",
+    "AddressCountryRegionId",
+    "AddressState",
+    "AddressCity",
 ]
 
 ENTITY_NAME = "CustomersV2"

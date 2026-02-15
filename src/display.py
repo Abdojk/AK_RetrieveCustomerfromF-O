@@ -9,7 +9,7 @@ DISPLAY_COLUMNS = [
     "CustomerGroupId",
     "SalesCurrencyCode",
     "PrimaryContactEmail",
-    "DataAreaId",
+    "dataAreaId",
 ]
 
 # Friendly headers for display

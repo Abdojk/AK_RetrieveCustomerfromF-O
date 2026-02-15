@@ -34,7 +34,8 @@ class WhatsAppConfig:
         self.twilio_account_sid: str = os.environ["TWILIO_ACCOUNT_SID"]
         self.twilio_auth_token: str = os.environ["TWILIO_AUTH_TOKEN"]
         self.twilio_whatsapp_number: str = os.environ["TWILIO_WHATSAPP_NUMBER"]
-        self.openai_api_key: str = os.environ["OPENAI_API_KEY"]
+        self.azure_speech_key: str = os.environ["AZURE_SPEECH_KEY"]
+        self.azure_speech_region: str = os.environ["AZURE_SPEECH_REGION"]
         self.d365_tenant_id: str = os.environ["D365_TENANT_ID"]
         self.d365_client_id: str = os.environ["D365_CLIENT_ID"]
         self.d365_client_secret: str = os.environ["D365_CLIENT_SECRET"]
@@ -96,9 +97,11 @@ def create_app(config: WhatsAppConfig | None = None) -> Flask:
                 "Failed to download your voice message. Please try again."
             )
 
-        # Step 4: Transcribe audio via Whisper
+        # Step 4: Transcribe audio via Azure Speech
         try:
-            transcription = transcribe_audio(audio_data, cfg.openai_api_key)
+            transcription = transcribe_audio(
+                audio_data, cfg.azure_speech_key, cfg.azure_speech_region
+            )
         except TranscriptionError as exc:
             logger.error("Transcription failed: %s", exc)
             return _make_twiml_reply(
@@ -106,9 +109,9 @@ def create_app(config: WhatsAppConfig | None = None) -> Flask:
                 "Please try again with a clearer recording."
             )
 
-        # Step 5: Extract customer fields via GPT
+        # Step 5: Extract customer fields via rule-based parsing
         try:
-            fields = extract_customer_fields(transcription, cfg.openai_api_key)
+            fields = extract_customer_fields(transcription)
         except ParseError as exc:
             logger.warning("Field extraction failed: %s", exc)
             return _make_twiml_reply(str(exc))

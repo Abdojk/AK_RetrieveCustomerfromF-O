@@ -7,6 +7,7 @@ Twilio/ngrok. Tests each stage independently.
 import os
 import sys
 import logging
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from dotenv import load_dotenv
@@ -70,10 +71,11 @@ def test_d365_auth() -> D365ApiClient:
 def test_d365_create(client: D365ApiClient) -> None:
     """Stage 4: Test customer creation in D365."""
     print("\n--- STAGE 4: D365 Customer Creation ---")
+    unique_id = f"AKTEST{int(time.time()) % 100000}"
     try:
         created = create_customer(
             client=client,
-            customer_account="AKTEST99",
+            customer_account=unique_id,
             organization_name="Pipeline Test Customer",
             customer_group_id="80",
         )

@@ -61,6 +61,8 @@ Examples:
   python src/main.py retrieve --dashboard                               # Summary dashboard view
   python src/main.py retrieve --dry-run                                 # Test auth only
   python src/main.py create --account AK001 --name "Abdo Khoury" --group 80
+  python src/main.py whatsapp                                           # Start WhatsApp webhook server
+  python src/main.py whatsapp --port 8080                               # Custom port
   python src/main.py -v retrieve                                        # Verbose logging
         """,
     )
@@ -89,6 +91,21 @@ Examples:
     create_parser.add_argument("--name", required=True, help="OrganizationName (e.g., 'Abdo Khoury')")
     create_parser.add_argument("--group", required=True, help="CustomerGroupId (e.g., 80)")
 
+    # --- whatsapp subcommand ---
+    whatsapp_parser = subparsers.add_parser(
+        "whatsapp",
+        help="Start WhatsApp webhook server for voice-based customer creation",
+    )
+    whatsapp_parser.add_argument(
+        "--host", default="0.0.0.0", help="Host to bind the webhook server (default: 0.0.0.0)"
+    )
+    whatsapp_parser.add_argument(
+        "--port", type=int, default=5000, help="Port for the webhook server (default: 5000)"
+    )
+    whatsapp_parser.add_argument(
+        "--debug", action="store_true", help="Run Flask in debug mode"
+    )
+
     args = parser.parse_args()
 
     # Default to 'retrieve' if no subcommand given (backward compatibility)
@@ -96,6 +113,50 @@ Examples:
         args.command = "retrieve"
 
     return args
+
+
+def validate_whatsapp_env_vars() -> None:
+    """Validate environment variables required for WhatsApp integration."""
+    required = [
+        "TWILIO_ACCOUNT_SID",
+        "TWILIO_AUTH_TOKEN",
+        "TWILIO_WHATSAPP_NUMBER",
+        "OPENAI_API_KEY",
+        "D365_TENANT_ID",
+        "D365_CLIENT_ID",
+        "D365_CLIENT_SECRET",
+        "D365_ENVIRONMENT_URL",
+    ]
+    missing = [var for var in required if not os.getenv(var)]
+    if missing:
+        print(f"\nMissing required environment variables for WhatsApp integration:")
+        for var in missing:
+            print(f"   - {var}")
+        print(f"\n   Set them in your .env file and try again.\n")
+        sys.exit(1)
+
+
+def _handle_whatsapp(args: argparse.Namespace) -> None:
+    """Handle the whatsapp subcommand — start the Flask webhook server."""
+    from src.whatsapp_webhook import create_app, WhatsAppConfig
+
+    validate_whatsapp_env_vars()
+
+    config = WhatsAppConfig()
+    app = create_app(config)
+
+    logger = logging.getLogger(__name__)
+    logger.info("Starting WhatsApp webhook server on %s:%s", args.host, args.port)
+    logger.warning(
+        "Running Flask dev server. Use a production WSGI server (gunicorn) "
+        "behind HTTPS for production deployments."
+    )
+
+    print(f"\nWhatsApp Webhook Server")
+    print(f"   Listening: http://{args.host}:{args.port}/webhook")
+    print(f"   Configure this URL in your Twilio WhatsApp sandbox.\n")
+
+    app.run(host=args.host, port=args.port, debug=args.debug)
 
 
 def _handle_retrieve(args: argparse.Namespace, client: D365ApiClient, start_time: float) -> None:
@@ -145,6 +206,11 @@ def main() -> None:
     # Load .env from project root
     env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
     load_dotenv(env_path)
+
+    # Early dispatch for whatsapp (auth happens per-request inside webhook)
+    if args.command == "whatsapp":
+        _handle_whatsapp(args)
+        return
 
     # Validate
     config = validate_env_vars()

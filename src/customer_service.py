@@ -12,12 +12,11 @@ CUSTOMER_FIELDS = [
     "OrganizationName",
     "NameAlias",
     "SalesCurrencyCode",
-    "PaymentTermsName",
+    "PaymentTerms",
     "InvoiceAccount",
     "PrimaryContactEmail",
     "PrimaryContactPhone",
     "AddressDescription",
-    "DataAreaId",
 ]
 
 ENTITY_NAME = "CustomersV2"

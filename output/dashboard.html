@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D365 F&amp;O Customer Dashboard</title>
+<style>
+  :root {
+    --primary: #0078d4;
+    --primary-light: #deecf9;
+    --bg: #f4f6f8;
+    --card-bg: #ffffff;
+    --text: #1a1a1a;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --bar-bg: #e5e7eb;
+    --bar-fill: #0078d4;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding: 2rem;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .header h1 {
+    font-size: 1.75rem;
+    color: var(--primary);
+    margin-bottom: 0.25rem;
+  }
+  .header .subtitle {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .kpi-row {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+  }
+  .kpi {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 2rem;
+    text-align: center;
+    min-width: 160px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .kpi .value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .kpi .label {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .card h2 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    color: var(--text);
+    border-bottom: 2px solid var(--primary-light);
+    padding-bottom: 0.5rem;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  thead th {
+    text-align: left;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:hover {
+    background: var(--primary-light);
+  }
+  td {
+    padding: 0.5rem 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  td.label {
+    font-weight: 500;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  td.bar-cell {
+    width: 35%;
+  }
+  .bar-bg {
+    background: var(--bar-bg);
+    border-radius: 4px;
+    height: 18px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    background: var(--bar-fill);
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+  .extra {
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+    font-style: italic;
+  }
+  .footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>D365 F&amp;O Customer Dashboard</h1>
+  <p class="subtitle">Generated 2026-02-15 21:12:03</p>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi">
+    <div class="value">415</div>
+    <div class="label">Total Customers</div>
+  </div>
+  <div class="kpi">
+    <div class="value">16</div>
+    <div class="label">Customer Groups</div>
+  </div>
+  <div class="kpi">
+    <div class="value">3</div>
+    <div class="label">Currencies</div>
+  </div>
+  <div class="kpi">
+    <div class="value">2%</div>
+    <div class="label">Email Coverage</div>
+  </div>
+</div>
+
+<div class="grid">
+  
+    <div class="card">
+      <h2>By Customer Group</h2>
+      <table>
+        <thead><tr><th>Name</th><th>Count</th><th>%</th><th></th></tr></thead>
+        <tbody><tr><td class='label'>سوبر ماركت</td><td class='num'>196</td><td class='num'>47.2%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:47.2%"></div></div></td></tr>
+<tr><td class='label'>10</td><td class='num'>110</td><td class='num'>26.5%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:26.5%"></div></div></td></tr>
+<tr><td class='label'>LOCAL</td><td class='num'>39</td><td class='num'>9.4%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:9.4%"></div></div></td></tr>
+<tr><td class='label'>30</td><td class='num'>21</td><td class='num'>5.1%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:5.1%"></div></div></td></tr>
+<tr><td class='label'>80</td><td class='num'>12</td><td class='num'>2.9%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:2.9%"></div></div></td></tr>
+<tr><td class='label'>الجملة</td><td class='num'>7</td><td class='num'>1.7%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:1.7%"></div></div></td></tr>
+<tr><td class='label'>11</td><td class='num'>6</td><td class='num'>1.4%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:1.4%"></div></div></td></tr>
+<tr><td class='label'>99</td><td class='num'>5</td><td class='num'>1.2%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:1.2%"></div></div></td></tr>
+<tr><td class='label'>مستودعات</td><td class='num'>5</td><td class='num'>1.2%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:1.2%"></div></div></td></tr>
+<tr><td class='label'>100</td><td class='num'>3</td><td class='num'>0.7%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:0.7%"></div></div></td></tr>
+</tbody>
+      </table>
+      <p class='extra'>… and 6 more</p>
+    </div>
+  
+    <div class="card">
+      <h2>By Currency</h2>
+      <table>
+        <thead><tr><th>Name</th><th>Count</th><th>%</th><th></th></tr></thead>
+        <tbody><tr><td class='label'>SAR</td><td class='num'>241</td><td class='num'>58.1%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:58.1%"></div></div></td></tr>
+<tr><td class='label'>USD</td><td class='num'>173</td><td class='num'>41.7%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:41.7%"></div></div></td></tr>
+<tr><td class='label'>EUR</td><td class='num'>1</td><td class='num'>0.2%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:0.2%"></div></div></td></tr>
+</tbody>
+      </table>
+      
+    </div>
+  
+    <div class="card">
+      <h2>By Company</h2>
+      <table>
+        <thead><tr><th>Name</th><th>Count</th><th>%</th><th></th></tr></thead>
+        <tbody><tr><td class='label'><em>(blank)</em></td><td class='num'>415</td><td class='num'>100.0%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:100.0%"></div></div></td></tr>
+</tbody>
+      </table>
+      
+    </div>
+  
+    <div class="card">
+      <h2>Contact Coverage</h2>
+      <table>
+        <thead><tr><th>Channel</th><th>Coverage</th><th>%</th><th></th></tr></thead>
+        <tbody><tr><td class='label'>Email</td><td class='num'>10 / 415</td><td class='num'>2.4%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:2.4%"></div></div></td></tr><tr><td class='label'>Phone</td><td class='num'>44 / 415</td><td class='num'>10.6%</td><td class='bar-cell'><div class="bar-bg"><div class="bar-fill" style="width:10.6%"></div></div></td></tr></tbody>
+      </table>
+    </div>
+</div>
+
+<div class="footer">
+  D365 F&amp;O Customer Management Tool &middot; 2026-02-15 21:12:03
+</div>
+
+</body>
+</html>

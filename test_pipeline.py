@@ -4,6 +4,7 @@ Simulates what happens when a voice message arrives, without needing
 Twilio/ngrok. Tests each stage independently.
 """
 
+import io
 import os
 import sys
 import logging
@@ -26,6 +27,31 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger("test_pipeline")
+
+
+def test_whisper(api_key: str) -> str | None:
+    """Stage 1: Generate a short audio clip with gTTS and send it to Whisper."""
+    try:
+        from gtts import gTTS
+    except ImportError:
+        print("   gTTS not installed — run: pip install gtts")
+        print("   RESULT: SKIPPED")
+        return None
+
+    text = "Create customer AK010, name Contoso, group 80"
+    print(f"   Generating audio for: '{text}'")
+    tts = gTTS(text=text, lang="en")
+    buf = io.BytesIO()
+    tts.write_to_fp(buf)
+    audio_bytes = buf.getvalue()
+    print(f"   Audio size: {len(audio_bytes)} bytes")
+
+    try:
+        result = transcribe_audio(audio_bytes, api_key, filename="test.mp3")
+        return result
+    except TranscriptionError as exc:
+        print(f"   Whisper error: {exc}")
+        return None
 
 
 def test_gpt_extraction(api_key: str) -> None:
@@ -99,10 +125,14 @@ def main() -> None:
     print("  Whisper (skipped) → GPT → D365 Auth → D365 Create")
     print("=" * 55)
 
-    # Stage 1: Whisper — skip (no real audio file to send)
+    # Stage 1: Whisper — generate a test audio clip and transcribe it
     print("\n--- STAGE 1: Whisper Transcription ---")
-    print("   (Skipped — no audio file; using simulated text)")
-    print("   RESULT: SKIPPED")
+    transcription = test_whisper(api_key)
+    if transcription:
+        print(f"   Whisper returned: '{transcription}'")
+        print("   RESULT: PASS")
+    else:
+        print("   RESULT: FAIL")
 
     # Stage 2: GPT extraction
     fields = test_gpt_extraction(api_key)

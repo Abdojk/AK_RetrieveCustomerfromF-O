@@ -84,75 +84,93 @@ def create_app(
         logger.info("Incoming WhatsApp message from %s", sender)
         logger.info("Message body: %s", body if body else "(empty — likely voice/media)")
 
-        # Step 2: Check for voice message (media attachment)
-        num_media = int(request.form.get("NumMedia", "0"))
-        if num_media < 1:
-            logger.info("Text-only message received — sending usage instructions.")
-            return _make_twiml_reply(USAGE_INSTRUCTIONS)
-
-        media_url = request.form.get("MediaUrl0", "")
-        media_type = request.form.get("MediaContentType0", "")
-        logger.info("Media received: type=%s, url=%s", media_type, media_url)
-
-        # Step 3: Download audio from Twilio
         try:
-            audio_data = _download_audio(
-                media_url, cfg.twilio_account_sid, cfg.twilio_auth_token
-            )
-        except RuntimeError as exc:
-            logger.error("Audio download failed: %s", exc)
+            return _process_voice_message(cfg, request)
+        except Exception as exc:
+            logger.exception("Unhandled error processing WhatsApp message: %s", exc)
             return _make_twiml_reply(
-                "Failed to download your voice message. Please try again."
+                "Something went wrong while processing your message. "
+                "Please try again. If the problem persists, contact an administrator."
             )
-
-        # Step 4: Transcribe audio via Whisper
-        try:
-            transcription = transcribe_audio(audio_data, cfg.openai_api_key)
-        except TranscriptionError as exc:
-            logger.error("Transcription failed: %s", exc)
-            return _make_twiml_reply(
-                "Could not transcribe your voice message. "
-                "Please try again with a clearer recording."
-            )
-
-        # Step 5: Extract customer fields via GPT
-        try:
-            fields = extract_customer_fields(transcription, cfg.openai_api_key)
-        except ParseError as exc:
-            logger.warning("Field extraction failed: %s", exc)
-            return _make_twiml_reply(str(exc))
-
-        # Step 6: Authenticate to D365 and create customer
-        try:
-            client = _get_d365_client(cfg)
-            created = create_customer(
-                client=client,
-                customer_account=fields.customer_account,
-                organization_name=fields.organization_name,
-                customer_group_id=fields.customer_group_id,
-            )
-        except SystemExit as exc:
-            logger.error("D365 customer creation failed: %s", exc)
-            return _make_twiml_reply(
-                "Failed to create customer in D365 F&O. "
-                "Please try again later or contact an administrator."
-            )
-
-        # Step 7: Send confirmation
-        account = created.get("CustomerAccount", fields.customer_account)
-        name = created.get("OrganizationName", fields.organization_name)
-        group = created.get("CustomerGroupId", fields.customer_group_id)
-
-        confirmation = (
-            "Customer created successfully in D365 F&O!\n\n"
-            f"Account: {account}\n"
-            f"Name: {name}\n"
-            f"Group: {group}"
-        )
-        logger.info("Customer created: %s / %s / %s", account, name, group)
-        return _make_twiml_reply(confirmation)
 
     return app
+
+
+def _process_voice_message(cfg: WhatsAppConfig, req) -> Response:
+    """Process an incoming WhatsApp message through the full voice pipeline.
+
+    Separated from the route handler so that a top-level except can
+    guarantee a TwiML reply even on unexpected errors.
+    """
+    # Step 2: Check for voice message (media attachment)
+    num_media = int(req.form.get("NumMedia", "0"))
+    if num_media < 1:
+        logger.info("Text-only message received — sending usage instructions.")
+        return _make_twiml_reply(USAGE_INSTRUCTIONS)
+
+    media_url = req.form.get("MediaUrl0", "")
+    media_type = req.form.get("MediaContentType0", "")
+    logger.info("Media received: type=%s, url=%s", media_type, media_url)
+
+    # Step 3: Download audio from Twilio
+    try:
+        audio_data = _download_audio(
+            media_url, cfg.twilio_account_sid, cfg.twilio_auth_token
+        )
+    except RuntimeError as exc:
+        logger.error("Audio download failed: %s", exc)
+        return _make_twiml_reply(
+            "Failed to download your voice message. Please try again."
+        )
+
+    # Step 4: Transcribe audio via Whisper
+    try:
+        transcription = transcribe_audio(audio_data, cfg.openai_api_key)
+    except TranscriptionError as exc:
+        logger.error("Transcription failed: %s", exc)
+        return _make_twiml_reply(
+            "Could not transcribe your voice message. "
+            "Please try again with a clearer recording."
+        )
+
+    logger.info("Transcription: %s", transcription)
+
+    # Step 5: Extract customer fields via GPT
+    try:
+        fields = extract_customer_fields(transcription, cfg.openai_api_key)
+    except ParseError as exc:
+        logger.warning("Field extraction failed: %s", exc)
+        return _make_twiml_reply(str(exc))
+
+    # Step 6: Authenticate to D365 and create customer
+    try:
+        client = _get_d365_client(cfg)
+        created = create_customer(
+            client=client,
+            customer_account=fields.customer_account,
+            organization_name=fields.organization_name,
+            customer_group_id=fields.customer_group_id,
+        )
+    except (SystemExit, Exception) as exc:
+        logger.error("D365 customer creation failed: %s", exc)
+        return _make_twiml_reply(
+            "Failed to create customer in D365 F&O. "
+            "Please try again later or contact an administrator."
+        )
+
+    # Step 7: Send confirmation
+    account = created.get("CustomerAccount", fields.customer_account)
+    name = created.get("OrganizationName", fields.organization_name)
+    group = created.get("CustomerGroupId", fields.customer_group_id)
+
+    confirmation = (
+        "Customer created successfully in D365 F&O!\n\n"
+        f"Account: {account}\n"
+        f"Name: {name}\n"
+        f"Group: {group}"
+    )
+    logger.info("Customer created: %s / %s / %s", account, name, group)
+    return _make_twiml_reply(confirmation)
 
 
 def _build_original_url(req: request) -> str:
